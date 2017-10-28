@@ -44,7 +44,15 @@ using namespace Eigen;
 G2O_USE_OPTIMIZATION_LIBRARY(csparse)
 
 //typedef Eigen::Matrix<double, 6,6> Matrix6d; //Avoid ambiguous symbol
-
+#if 0
+typedef Plane3D VPlane3D;
+typedef VertexPlane VertexVPlane;
+typedef EdgeSE3PlaneSensorCalib EdgeSE3VPlaneSensorCalib;
+#else
+typedef QPlane3D VPlane3D;
+typedef VertexQPlane VertexVPlane;
+typedef EdgeSE3QPlaneSensorCalib EdgeSE3VPlaneSensorCalib;
+#endif
 
 
 double uniform_rand(double lowerBndr, double upperBndr)

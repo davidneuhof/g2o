@@ -38,7 +38,9 @@ namespace g2o {
   G2O_REGISTER_TYPE(VERTEX3, VertexSE3Euler);
   G2O_REGISTER_TYPE(EDGE3, EdgeSE3Euler);
   G2O_REGISTER_TYPE(VERTEX_PLANE, VertexPlane);
+  G2O_REGISTER_TYPE(VERTEX_QPLANE, VertexQPlane);  
   G2O_REGISTER_TYPE(EDGE_SE3_PLANE_CALIB, EdgeSE3PlaneSensorCalib);
+  G2O_REGISTER_TYPE(EDGE_SE3_QPLANE_CALIB, EdgeSE3QPlaneSensorCalib);
 
   G2O_REGISTER_TYPE(VERTEX_LINE3D, VertexLine3D);
   G2O_REGISTER_TYPE(EDGE_SE3_LINE3D, EdgeSE3Line3D);
@@ -47,8 +49,10 @@ namespace g2o {
 
 #ifdef G2O_HAVE_OPENGL
   G2O_REGISTER_ACTION(CacheCameraDrawAction);
-  G2O_REGISTER_ACTION(VertexPlaneDrawAction);  
+  G2O_REGISTER_ACTION(VertexPlaneDrawAction);
+  G2O_REGISTER_ACTION(VertexQPlaneDrawAction);  
   G2O_REGISTER_ACTION(EdgeSE3PlaneSensorCalibDrawAction);
+  G2O_REGISTER_ACTION(EdgeSE3QPlaneSensorCalibDrawAction);
   G2O_REGISTER_ACTION(VertexLine3DDrawAction);
   G2O_REGISTER_ACTION(EdgeSE3Line3DDrawAction);
 #endif

@@ -24,25 +24,65 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef G2O_TYPES_SLAM3D_ADDONS_
-#define G2O_TYPES_SLAM3D_ADDONS_
+#ifndef G2O_VERTEX_QPLANE_H_
+#define G2O_VERTEX_QPLANE_H_
 
+#include "g2o_types_slam3d_addons_api.h"
 #include "g2o/config.h"
 #include "g2o/core/base_vertex.h"
-#include "g2o/core/base_binary_edge.h"
 #include "g2o/core/hyper_graph_action.h"
-#include "g2o/types//slam3d/types_slam3d.h"
+#include "qplane3d.h"
 
-#include "vertex_se3_euler.h"
-#include "edge_se3_euler.h"
-#include "vertex_plane.h"
-#include "vertex_qplane.h"
-#include "edge_se3_plane_calib.h"
-#include "edge_se3_qplane_calib.h"
+namespace g2o
+{
 
-#include "vertex_line3d.h"
-#include "edge_se3_line.h"
-#include "edge_plane.h"
-#include "edge_se3_calib.h"
+  class G2O_TYPES_SLAM3D_ADDONS_API VertexQPlane : public BaseVertex<3, QPlane3D>
+    {
+    public:
+      EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+      VertexQPlane();
 
+      virtual bool read(std::istream& is);
+      virtual bool write(std::ostream& os) const;
+
+      virtual void setToOriginImpl() { _estimate = QPlane3D(); }
+
+      virtual void oplusImpl(const double* update_) {
+        Eigen::Map<const Vector3D> update(update_);
+	_estimate.oplus(update);
+      }
+
+      virtual bool setEstimateDataImpl(const double* est){
+        Eigen::Map<const Vector4D> _est(est);
+	_estimate.fromVector(_est);
+	return true;
+      }
+
+      virtual bool getEstimateData(double* est) const{
+        Eigen::Map<Vector4D> _est(est);
+	_est = _estimate.toVector();
+	return true;
+      }
+
+      virtual int estimateDimension() const {
+        return 4;
+      }
+
+      Vector3D color;
+    };
+
+#ifdef G2O_HAVE_OPENGL
+  class VertexQPlaneDrawAction: public DrawAction
+  {
+    public:
+      VertexQPlaneDrawAction();
+      virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element, 
+          HyperGraphElementAction::Parameters* params_ );
+    protected:
+      virtual bool refreshPropertyPtrs(HyperGraphElementAction::Parameters* params_);
+      FloatProperty* _planeWidth, *_planeHeight;
+  };
+#endif
+
+}
 #endif

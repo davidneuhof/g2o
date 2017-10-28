@@ -24,28 +24,28 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "vertex_plane.h"
+#include "vertex_qplane.h"
 
 #include "g2o/stuff/opengl_wrapper.h"
 
 namespace g2o
 {
 
-  VertexPlane::VertexPlane(){
-    //color << .2, .2, .2;
-    color << .9, .1, .1;
+  VertexQPlane::VertexQPlane(){
+    color << .2, .2, .2;
+    //color << .9, .1, .1;
   }
   
-  bool VertexPlane::read(std::istream& is) {
+  bool VertexQPlane::read(std::istream& is) {
     Vector4D lv;
     for (int i=0; i<4; i++)
       is >> lv[i];
-    setEstimate(Plane3D(lv));
+    setEstimate(QPlane3D(lv));
     is >> color(0) >> color(1) >> color(2);
     return true;
   }
 
-  bool VertexPlane::write(std::ostream& os) const {
+  bool VertexQPlane::write(std::ostream& os) const {
     Vector4D lv=_estimate.toVector();
     for (int i=0; i<4; i++){
       os << lv[i] << " ";
@@ -56,11 +56,11 @@ namespace g2o
 
 #ifdef G2O_HAVE_OPENGL
 
-  VertexPlaneDrawAction::VertexPlaneDrawAction(): DrawAction(typeid(VertexPlane).name())
+  VertexQPlaneDrawAction::VertexQPlaneDrawAction(): DrawAction(typeid(VertexQPlane).name())
   {
   }
 
-  bool VertexPlaneDrawAction::refreshPropertyPtrs(HyperGraphElementAction::Parameters* params_)
+  bool VertexQPlaneDrawAction::refreshPropertyPtrs(HyperGraphElementAction::Parameters* params_)
   {
     if (!DrawAction::refreshPropertyPtrs(params_))
       return false;
@@ -74,7 +74,7 @@ namespace g2o
     return true;
   }
 
-  HyperGraphElementAction* VertexPlaneDrawAction::operator()(HyperGraph::HyperGraphElement* element, 
+  HyperGraphElementAction* VertexQPlaneDrawAction::operator()(HyperGraph::HyperGraphElement* element, 
                  HyperGraphElementAction::Parameters* params_)
   {
     if (typeid(*element).name()!=_typeName)
@@ -87,10 +87,10 @@ namespace g2o
     if (_show && !_show->value())
       return this;
 
-    VertexPlane* that = static_cast<VertexPlane*>(element);
+    VertexQPlane* that = static_cast<VertexQPlane*>(element);
     double d = that->estimate().distance();
-    double azimuth = Plane3D::azimuth(that->estimate().normal());
-    double elevation = Plane3D::elevation(that->estimate().normal());
+    double azimuth = QPlane3D::azimuth(that->estimate().normal());
+    double elevation = QPlane3D::elevation(that->estimate().normal());
     glColor3f(float(that->color(0)), float(that->color(1)), float(that->color(2)));
     glPushMatrix();
     glRotatef(float(RAD2DEG(azimuth)), 0.f, 0.f, 1.f);

@@ -12,6 +12,10 @@ ADD_LIBRARY(types_slam3d_addons ${G2O_LIB_TYPE}
   edge_se3_line.cpp edge_se3_line.h
   edge_plane.cpp edge_plane.h
   edge_se3_calib.cpp edge_se3_calib.h
+  vertex_qplane.cpp
+  vertex_qplane.h
+  edge_se3_qplane_calib.cpp
+  edge_se3_qplane_calib.h
   types_slam3d_addons.cpp
   types_slam3d_addons.h
 )

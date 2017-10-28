@@ -126,7 +126,6 @@ namespace g2o {
     return Plane3D(v2);
   };
 
-
 }
 
 #endif
