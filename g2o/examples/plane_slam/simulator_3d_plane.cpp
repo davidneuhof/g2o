@@ -404,8 +404,7 @@ int main (int argc  , char ** argv){
 #define SQUARE_MOVEMENT
 #ifdef SQUARE_MOVEMENT
   // DN: new movement:
-  //r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
-  r->_nmovecov << 0, 0, 0, 0, 0, 0;  // DN: noise of movement (diagonal of the covariance matrix)
+  r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
   int robotIdx = 0;
   double stepSize = 0.5;
   int squareSize = 5;  // number of steps in each edge of the square
