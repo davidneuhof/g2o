@@ -55,6 +55,7 @@ typedef EdgeSE3QPlaneSensorCalib EdgeSE3VPlaneSensorCalib;
 #endif
 
 
+
 double uniform_rand(double lowerBndr, double upperBndr)
 {
   return lowerBndr + ((double) std::rand() / (RAND_MAX + 1.0)) * (upperBndr - lowerBndr);
@@ -374,21 +375,21 @@ int main (int argc  , char ** argv){
   PlaneItem* pi = new PlaneItem(g,1);
   static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
   static_cast<VertexVPlane*>(pi->vertex())->color << 1, 0.4, 0.4;
-  pi->vertex()->setFixed(fixPlanes);
+  //pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
   plane.fromVector(Eigen::Vector4d(0., 1., 0., 5.));
   pi = new PlaneItem(g,2);
   static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
   static_cast<VertexVPlane*>(pi->vertex())->color << 0.4, 1, 0.4;
-  pi->vertex()->setFixed(fixPlanes);
+  //pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
   plane.fromVector(Eigen::Vector4d(0., 0., 1., 5.));
   pi =new PlaneItem(g,3);
   static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
   static_cast<VertexVPlane*>(pi->vertex())->color << 0.4, 0.4, 1;
-  pi->vertex()->setFixed(fixPlanes);
+  //pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
   //sim->_lastVertexId=4;
@@ -403,7 +404,8 @@ int main (int argc  , char ** argv){
 #define SQUARE_MOVEMENT
 #ifdef SQUARE_MOVEMENT
   // DN: new movement:
-  r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
+  //r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
+  r->_nmovecov << 0, 0, 0, 0, 0, 0;  // DN: noise of movement (diagonal of the covariance matrix)
   int robotIdx = 0;
   double stepSize = 0.5;
   int squareSize = 5;  // number of steps in each edge of the square
@@ -520,6 +522,28 @@ int main (int argc  , char ** argv){
   //     }
   //   }
   // }
+  
+  // DN: fix planes or add noise to them before optimization
+  for (WorldItemSet::iterator it = sim->_world.begin(); it != sim->_world.end(); it++)
+  {
+      WorldItem* wi = *it;
+      PlaneItem* pi = dynamic_cast<PlaneItem*>(wi);
+      if (!pi)
+          continue;
+      if (fixPlanes)
+      {
+          pi->vertex()->setFixed(true);
+      }
+      else
+      {
+          VertexVPlane* planeVertex = dynamic_cast<VertexVPlane*>(pi->vertex());
+          VPlane3D plane = planeVertex->estimate();
+          Vector3d noise = sample_noise_from_plane(ps->_nplane);
+          plane.oplus(noise);
+          planeVertex->setEstimate(plane);
+          pi->vertex()->setFixed(false);
+      }
+  }
 
 
   ofstream osp("test_preopt.g2o");
