@@ -220,7 +220,7 @@ struct Simulator: public SimulatorItem {
 
 struct PlaneItem: public WorldItem{
   PlaneItem(OptimizableGraph* graph_, int id) : WorldItem(graph_){
-    VertexPlane* p = new VertexPlane();
+    VertexVPlane* p = new VertexVPlane();
     p->setId(id);
     graph()->addVertex(p);
     setVertex(p);
@@ -260,11 +260,11 @@ struct PlaneSensor: public Sensor{
     }
     const Isometry3d& robotPose=position;
     Isometry3d sensorPose=robotPose*_offsetVertex->estimate();
-    VertexPlane* planeVertex=dynamic_cast<VertexPlane*>(pi->vertex());
-    Plane3D worldPlane=planeVertex->estimate();
-    Plane3D measuredPlane=sensorPose.inverse()*worldPlane;
+    VertexVPlane* planeVertex=dynamic_cast<VertexVPlane*>(pi->vertex());
+    VPlane3D worldPlane=planeVertex->estimate();
+    VPlane3D measuredPlane=sensorPose.inverse()*worldPlane;
 
-    EdgeSE3PlaneSensorCalib* e=new EdgeSE3PlaneSensorCalib();
+    EdgeSE3VPlaneSensorCalib* e=new EdgeSE3VPlaneSensorCalib();
     e->vertices()[0]=robotVertex;
     e->vertices()[1]=planeVertex;
     e->vertices()[2]=_offsetVertex;
@@ -358,36 +358,36 @@ int main (int argc  , char ** argv){
   sim->_robots.push_back(r);
 
   const int NUM_OF_PLANES = 3;
-  //Plane3D planes[NUM_OF_PLANES] = { 
-  //    Plane3D(Eigen::Vector4d(0.,0.,1.,5.)), 
-  //    Plane3D(Eigen::Vector4d(1.,0.,0.,5.)), 
-  //    Plane3D(Eigen::Vector4d(0.,1.,0.,5.))
+  //VPlane3D planes[NUM_OF_PLANES] = { 
+  //    VPlane3D(Eigen::Vector4d(0.,0.,1.,5.)), 
+  //    VPlane3D(Eigen::Vector4d(1.,0.,0.,5.)), 
+  //    VPlane3D(Eigen::Vector4d(0.,1.,0.,5.))
   //};
   //int i = 0;
-  //for (Plane3D plane : planes)
+  //for (VPlane3D plane : planes)
   //{
   //  std::cout << "plane 1" << plane.coeffs() << endl;
 
   //}
-  Plane3D plane;
+  VPlane3D plane;
   plane.fromVector(Eigen::Vector4d(1., 0., 0., 5.));
   PlaneItem* pi = new PlaneItem(g,1);
-  static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
-  static_cast<VertexPlane*>(pi->vertex())->color << 1, 0.4, 0.4;
+  static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexVPlane*>(pi->vertex())->color << 1, 0.4, 0.4;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
   plane.fromVector(Eigen::Vector4d(0., 1., 0., 5.));
   pi = new PlaneItem(g,2);
-  static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
-  static_cast<VertexPlane*>(pi->vertex())->color << 0.4, 1, 0.4;
+  static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexVPlane*>(pi->vertex())->color << 0.4, 1, 0.4;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
   plane.fromVector(Eigen::Vector4d(0., 0., 1., 5.));
   pi =new PlaneItem(g,3);
-  static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
-  static_cast<VertexPlane*>(pi->vertex())->color << 0.4, 0.4, 1;
+  static_cast<VertexVPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexVPlane*>(pi->vertex())->color << 0.4, 0.4, 1;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
