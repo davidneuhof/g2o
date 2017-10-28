@@ -45,6 +45,8 @@ G2O_USE_OPTIMIZATION_LIBRARY(csparse)
 
 //typedef Eigen::Matrix<double, 6,6> Matrix6d; //Avoid ambiguous symbol
 
+
+
 double uniform_rand(double lowerBndr, double upperBndr)
 {
   return lowerBndr + ((double) std::rand() / (RAND_MAX + 1.0)) * (upperBndr - lowerBndr);
@@ -128,7 +130,7 @@ struct Robot: public WorldItem {
   void move(const Isometry3d& newPosition, int& id) {
     Isometry3d delta = _position.inverse()*newPosition;
     _position = newPosition;
-    VertexSE3* v=new VertexSE3();
+    VertexSE3* v = new VertexSE3();
     v->setId(id);
     id++;
     graph()->addVertex(v);
@@ -149,8 +151,8 @@ struct Robot: public WorldItem {
       Isometry3d noise=sample_noise_from_se3(_nmovecov);
       e->setMeasurement(delta*noise);
       Matrix6d m=Matrix6d::Identity();
-      for (int i=0; i<6; i++){
-	m(i,i)=1./(_nmovecov(i));
+      for (int i = 0; i<6; i++) {
+          m(i, i) = 1. / (_nmovecov(i));
       }
       e->setInformation(m);
       e->vertices()[0]=vertex();
@@ -210,7 +212,7 @@ struct Simulator: public SimulatorItem {
 
 struct PlaneItem: public WorldItem{
   PlaneItem(OptimizableGraph* graph_, int id) : WorldItem(graph_){
-    VertexPlane* p=new VertexPlane();
+    VertexPlane* p = new VertexPlane();
     p->setId(id);
     graph()->addVertex(p);
     setVertex(p);
@@ -252,7 +254,6 @@ struct PlaneSensor: public Sensor{
     Isometry3d sensorPose=robotPose*_offsetVertex->estimate();
     VertexPlane* planeVertex=dynamic_cast<VertexPlane*>(pi->vertex());
     Plane3D worldPlane=planeVertex->estimate();
-
     Plane3D measuredPlane=sensorPose.inverse()*worldPlane;
 
     EdgeSE3PlaneSensorCalib* e=new EdgeSE3PlaneSensorCalib();
@@ -262,6 +263,7 @@ struct PlaneSensor: public Sensor{
     Vector3d noise = sample_noise_from_plane(_nplane);
     measuredPlane.oplus(noise);
     e->setMeasurement(measuredPlane);
+    // DN: change plane vertex estimation to the first 
     Matrix3d m=Matrix3d::Zero();
     m(0,0)=1./(_nplane(0));
     m(1,1)=1./(_nplane(1));
@@ -289,23 +291,22 @@ int main (int argc  , char ** argv){
   bool listSolvers;
   string strSolver;
   cerr << "graph" << endl;
-  arg.param("i", maxIterations, 5, "perform n iterations");
-  arg.param("v", verbose, false, "verbose output of the optimization process");
-  arg.param("solver", strSolver, "lm_var", "select one specific solver");
+  arg.param("i", maxIterations, 10, "perform n iterations");
+  arg.param("v", verbose, true, "verbose output of the optimization process");
+  arg.param("solver", strSolver, "gn_var", "select one specific solver");
   arg.param("lambdaInit", lambdaInit, 0, "user specified lambda init for levenberg");
   arg.param("robustKernel", robustKernel, false, "use robust error functions");
-  arg.param("fixSensor", fixSensor, false, "fix the sensor position on the robot");
+  arg.param("fixSensor", fixSensor, true, "fix the sensor position on the robot");
   arg.param("fixTrajectory", fixTrajectory, false, "fix the trajectory");
-  arg.param("fixFirstPose", fixFirstPose, false, "fix the first robot pose");
+  arg.param("fixFirstPose", fixFirstPose, true, "fix the first robot pose");
   arg.param("fixPlanes", fixPlanes, false, "fix the planes (do localization only)");
   arg.param("planarMotion", planarMotion, false, "robot moves on a plane");
   arg.param("listSolvers", listSolvers, false, "list the solvers");
   arg.parseArgs(argc, argv);
 
 
-
-  SparseOptimizer* g=new SparseOptimizer();
-  ParameterSE3Offset* odomOffset=new ParameterSE3Offset();
+  SparseOptimizer* g = new SparseOptimizer();
+  ParameterSE3Offset* odomOffset = new ParameterSE3Offset();
   odomOffset->setId(0);
   g->addParameter(odomOffset);
 
@@ -330,7 +331,7 @@ int main (int argc  , char ** argv){
   Simulator* sim = new Simulator(g);
 
   cerr << "robot" << endl;
-  Robot* r=new Robot(g);
+  Robot* r = new Robot(g);
 
 
   cerr << "planeSensor" << endl;
@@ -340,101 +341,145 @@ int main (int argc  , char ** argv){
     -1,  0,  0,
     0, -1,   0;
 
-  Isometry3d sensorPose=Isometry3d::Identity();
-  sensorPose.matrix().block<3,3>(0,0) = R;
-  sensorPose.translation()= Vector3d(.3 , 0.5 , 1.2);
+  Isometry3d sensorPose = Isometry3d::Identity();
+  //sensorPose.matrix().block<3,3>(0,0) = R;
+  //sensorPose.translation()= Vector3d(.3 , 0.5 , 1.2);
   PlaneSensor* ps = new PlaneSensor(r, 0, sensorPose);
-  ps->_nplane << 0.03, 0.03, 0.005;
+  ps->_nplane << 0.03, 0.03, 0.005;  // DN: noise of planes (diagonal of the covariance matrix)
   r->_sensors.push_back(ps);
   sim->_robots.push_back(r);
 
-  cerr  << "p1" << endl;
+  const int NUM_OF_PLANES = 3;
+  //Plane3D planes[NUM_OF_PLANES] = { 
+  //    Plane3D(Eigen::Vector4d(0.,0.,1.,5.)), 
+  //    Plane3D(Eigen::Vector4d(1.,0.,0.,5.)), 
+  //    Plane3D(Eigen::Vector4d(0.,1.,0.,5.))
+  //};
+  //int i = 0;
+  //for (Plane3D plane : planes)
+  //{
+  //  std::cout << "plane 1" << plane.coeffs() << endl;
+
+  //}
   Plane3D plane;
-  PlaneItem* pi =new PlaneItem(g,1);
-  plane.fromVector(Eigen::Vector4d(0.,0.,1.,5.));
+  plane.fromVector(Eigen::Vector4d(1., 0., 0., 5.));
+  PlaneItem* pi = new PlaneItem(g,1);
   static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexPlane*>(pi->vertex())->color << 1, 0.4, 0.4;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
-  plane.fromVector(Eigen::Vector4d(1.,0.,0.,5.));
-  pi =new PlaneItem(g,2);
+  plane.fromVector(Eigen::Vector4d(0., 1., 0., 5.));
+  pi = new PlaneItem(g,2);
   static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexPlane*>(pi->vertex())->color << 0.4, 1, 0.4;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
-  cerr  << "p2" << endl;
+  plane.fromVector(Eigen::Vector4d(0., 0., 1., 5.));
   pi =new PlaneItem(g,3);
-  plane.fromVector(Eigen::Vector4d(0.,1.,0.,5.));
   static_cast<VertexPlane*>(pi->vertex())->setEstimate(plane);
+  static_cast<VertexPlane*>(pi->vertex())->color << 0.4, 0.4, 1;
   pi->vertex()->setFixed(fixPlanes);
   sim->_world.insert(pi);
 
-
-  Quaterniond q, iq;
-  if (planarMotion) {
-    r->_planarMotion = true;
-    r->_nmovecov << 0.01, 0.0025, 1e-9, 0.001, 0.001, 0.025;
-    q = Quaterniond(AngleAxisd(0.2, Vector3d::UnitZ()).toRotationMatrix());
-    iq = Quaterniond(AngleAxisd(-0.2, Vector3d::UnitZ()).toRotationMatrix());
-  } else {
-    r->_planarMotion = false;
-    //r->_nmovecov << 0.1, 0.005, 1e-9, 0.05, 0.001, 0.001;
-    r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;
-    q = Quaterniond((AngleAxisd(M_PI/10, Vector3d::UnitZ()) * AngleAxisd(0.1, Vector3d::UnitY())).toRotationMatrix());
-    iq = Quaterniond((AngleAxisd(-M_PI/10, Vector3d::UnitZ()) * AngleAxisd(0.1, Vector3d::UnitY())).toRotationMatrix());
-  }
-
-  Isometry3d delta=Isometry3d::Identity();
-  sim->_lastVertexId=4;
+  //sim->_lastVertexId=4;
+  sim->_lastVertexId = NUM_OF_PLANES + 1;
 
   Isometry3d startPose=Isometry3d::Identity();
   startPose.matrix().block<3,3>(0,0) = AngleAxisd(-0.75*M_PI, Vector3d::UnitZ()).toRotationMatrix();
   sim->move(0,startPose);
+  
+  Isometry3d delta = Isometry3d::Identity();
 
-  int k =20;
+#define SQUARE_MOVEMENT
+#ifdef SQUARE_MOVEMENT
+  // DN: new movement:
+  r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
+  int robotIdx = 0;
+  double stepSize = 0.5;
+  int squareSize = 5;  // number of steps in each edge of the square
+  int rounds = 4;  // number of rounds in square movement
+  delta.translation() = Vector3d(stepSize, 0, 0);
+  for (int i = 0; i < 4*rounds; i++)
+  {
+      delta.matrix().block<3, 3>(0, 0) = Matrix3d::Identity();
+      for (int j = 0; j < squareSize; j++)
+      {
+          std::cout << "m";
+          sim->relativeMove(robotIdx, delta);
+          std::cout << "s";
+          sim->sense(robotIdx);
+      }
+      delta.matrix().block<3, 3>(0, 0) = AngleAxisd(0.5*M_PI, Vector3d::UnitZ()).toRotationMatrix();
+      std::cout << "r";
+      sim->relativeMove(robotIdx, delta);
+      std::cout << "s";
+      sim->sense(robotIdx);
+  }
+#else
+  // DN: original movement:
+  Quaterniond q, iq;
+  if (planarMotion) {
+      r->_planarMotion = true;
+      r->_nmovecov << 0.01, 0.0025, 1e-9, 0.001, 0.001, 0.025;
+      q = Quaterniond(AngleAxisd(0.2, Vector3d::UnitZ()).toRotationMatrix());
+      iq = Quaterniond(AngleAxisd(-0.2, Vector3d::UnitZ()).toRotationMatrix());
+  }
+  else {
+      r->_planarMotion = false;
+      //r->_nmovecov << 0.1, 0.005, 1e-9, 0.05, 0.001, 0.001;
+      r->_nmovecov << 0.1, 0.005, 1e-9, 0.001, 0.001, 0.05;  // DN: noise of movement (diagonal of the covariance matrix)
+      q = Quaterniond((AngleAxisd(M_PI / 10, Vector3d::UnitZ()) * AngleAxisd(0.1, Vector3d::UnitY())).toRotationMatrix());
+      iq = Quaterniond((AngleAxisd(-M_PI / 10, Vector3d::UnitZ()) * AngleAxisd(0.1, Vector3d::UnitY())).toRotationMatrix());
+  }
+
+  int k = 20;
   int l = 2;
   double delta_t = 0.2;
-  for (int j=0; j<l; j++) {
-    Vector3d tr(1.,0.,0.);
-    delta.matrix().block<3,3>(0,0) = q.toRotationMatrix();
-    if (j==(l-1)){
-      delta.matrix().block<3,3>(0,0) = Matrix3d::Identity();
-    }
-    delta.translation()=tr*(delta_t*j);
-    Isometry3d iDelta = delta.inverse();
-    for (int a=0; a<2; a++){
-      for (int i=0; i<k; i++){
-        cerr << "m";
-        if (a==0)
-          sim->relativeMove(0,delta);
-        else
-          sim->relativeMove(0,iDelta);
-        cerr << "s";
-        sim->sense(0);
+  for (int j = 0; j<l; j++) {
+      Vector3d tr(1., 0., 0.);
+      delta.matrix().block<3, 3>(0, 0) = q.toRotationMatrix();
+      if (j == (l - 1)) {
+          delta.matrix().block<3, 3>(0, 0) = Matrix3d::Identity();  // DN: no rotation in j == l-1
       }
-    }
+      delta.translation() = tr*(delta_t*j);
+      Isometry3d iDelta = delta.inverse();
+      for (int a = 0; a<2; a++) {
+          for (int i = 0; i<k; i++) {
+              cerr << "m";
+              if (a == 0)
+                  sim->relativeMove(0, delta);
+              else
+                  sim->relativeMove(0, iDelta);
+              cerr << "s";
+              sim->sense(0);
+          }
+      }
   }
 
-  for (int j=0; j<l; j++) {
-    Vector3d tr(1.,0.,0.);
-    delta.matrix().block<3,3>(0,0) = iq.toRotationMatrix();
-    if (j==l-1){
-      delta.matrix().block<3,3>(0,0) = Matrix3d::Identity();
-    }
-    delta.translation()=tr*(delta_t*j);
-    Isometry3d iDelta = delta.inverse();
-    for (int a=0; a<2; a++){
-      for (int i=0; i<k; i++){
-        cerr << "m";
-        if (a==0)
-          sim->relativeMove(0,delta);
-        else
-          sim->relativeMove(0,iDelta);
-        cerr << "s";
-        sim->sense(0);
+  for (int j = 0; j<l; j++) {
+      Vector3d tr(1., 0., 0.);
+      delta.matrix().block<3, 3>(0, 0) = iq.toRotationMatrix();
+      if (j == l - 1) {
+          delta.matrix().block<3, 3>(0, 0) = Matrix3d::Identity();
       }
-    }
+      delta.translation() = tr*(delta_t*j);
+      Isometry3d iDelta = delta.inverse();
+      for (int a = 0; a<2; a++) {
+          for (int i = 0; i<k; i++) {
+              cerr << "m";
+              if (a == 0)
+                  sim->relativeMove(0, delta);
+              else
+                  sim->relativeMove(0, iDelta);
+              cerr << "s";
+              sim->sense(0);
+          }
+      }
   }
+  // DN: end of original movement
+#endif // !SQUARE_MOVEMENT
 
   ofstream os("test_gt.g2o");
   g->save(os);
@@ -449,7 +494,8 @@ int main (int argc  , char ** argv){
   }
 
   if (fixFirstPose){
-    OptimizableGraph::Vertex* gauge = g->vertex(4);
+    //OptimizableGraph::Vertex* gauge = g->vertex(4);
+    OptimizableGraph::Vertex* gauge = g->vertex(NUM_OF_PLANES + 1);
     if (gauge)
       gauge->setFixed(true);
   } // else {
@@ -466,6 +512,7 @@ int main (int argc  , char ** argv){
   //     }
   //   }
   // }
+
 
   ofstream osp("test_preopt.g2o");
   g->save(osp);
